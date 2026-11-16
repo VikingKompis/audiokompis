@@ -333,6 +333,30 @@ function wrapText(x, text, cx, y, maxW, lh) {
   lines.forEach((l, i) => x.fillText(l, cx, top + i * lh));
 }
 
+/* ---------- cloud progress (Supabase) ----------
+   Survives iOS clearing this browser's storage: positions are also kept off-device,
+   keyed by title + file size, so a re-imported book finds where you stopped. */
+const SB_URL = 'https://ezipjqcayttumeuoaszh.supabase.co';
+const SB_KEY = 'sb_publishable_nZkvLJ9SkHBff9RMStiV7Q_33ae8eEJ';
+const SB_HEAD = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY };
+const fpOf = b => b.title + '|' + b.size;
+let lastCloud = 0;
+
+async function cloudGet(b) {
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/progress?fingerprint=eq.${encodeURIComponent(fpOf(b))}&select=position,speed,updated_at`, { headers: SB_HEAD });
+    const j = await r.json();
+    return j[0] || null;
+  } catch (e) { return null; }
+}
+function cloudSave(b) {
+  fetch(`${SB_URL}/rest/v1/progress?on_conflict=fingerprint`, {
+    method: 'POST',
+    headers: { ...SB_HEAD, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' },
+    body: JSON.stringify({ fingerprint: fpOf(b), title: b.title, position: b.position || 0, speed: b.speed || 1, updated_at: new Date().toISOString() })
+  }).catch(() => {});
+}
+
 /* ---------- player ---------- */
 async function openBook(id) {
   const b = books.find(x => x.id === id);
@@ -340,6 +364,9 @@ async function openBook(id) {
   let blob = null;
   try { blob = await DB.getFile(id); } catch (e) {}
   if (!blob) { toast('Audio file not found'); return; }
+  // Use the cloud position if it is newer than what this device saved (e.g. after a re-import).
+  const c = await cloudGet(b);
+  if (c && Date.parse(c.updated_at) > (b.savedAt || 0)) { b.position = c.position; b.savedAt = Date.parse(c.updated_at); }
   closeSheet();
   current = b;
   pendingSeek = b.position || 0;
@@ -436,9 +463,13 @@ function saveProgress(force) {
   if (!force && now - lastSave < 4000) return;
   lastSave = now;
   current.position = audio.currentTime;
+  current.savedAt = now;
   if (dur()) current.duration = dur();
   saveMeta(current);
+  if (force || now - lastCloud > 15000) { lastCloud = now; cloudSave(current); }
 }
+// Save when the app goes to the background (iOS may suspend or clear it).
+document.addEventListener('visibilitychange', () => { if (document.hidden && current) saveProgress(true); });
 function setSession() {
   if (!('mediaSession' in navigator) || !current) return;
   const i = chapterIndex(audio.currentTime);
