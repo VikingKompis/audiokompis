@@ -415,7 +415,7 @@ function play() {
   clearInterval(fadeIv); fadeIv = null;
   audio.volume = 1;
   setSession();
-  audio.play().catch(() => toast('Tap play again'));
+  audio.play().then(() => setTimeout(() => { if (audio.paused) toast('Not playing. State ' + audio.readyState + ', error ' + (audio.error ? audio.error.code : 'none'), 6000); }, 1500)).catch(e => toast('Play failed: ' + e.name + ', state ' + audio.readyState + ', error ' + (audio.error ? audio.error.code : 'none'), 6000));
 }
 function pause() {
   audio.pause();
