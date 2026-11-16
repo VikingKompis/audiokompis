@@ -262,12 +262,20 @@ function probeDuration(f) {
 }
 
 /* ---------- import ---------- */
+// iOS WebKit picks its decoder from the blob's MIME type; M4B/M4A often arrive with a blank or generic type.
+const MIME = { m4b: 'audio/mp4', m4a: 'audio/mp4', mp4: 'audio/mp4', mp3: 'audio/mpeg', wav: 'audio/wav', aac: 'audio/aac' };
+function typedFile(f) {
+  const ext = (f.name.split('.').pop() || '').toLowerCase();
+  const t = MIME[ext] || f.type || 'application/octet-stream';
+  return t === f.type ? f : new File([f], f.name, { type: t });
+}
+
 async function importFile(f) {
   const id = (crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(36).slice(2));
   const title = f.name.replace(/\.[^.]+$/, '').replace(/_/g, ' ').trim() || 'Untitled';
   const [duration, chapters] = await Promise.all([probeDuration(f), readChapters(f)]);
   const meta = { id, title, author: 'Erik Broberg', size: f.size, duration, chapters, position: 0, speed: 1, finished: false, bookmarks: [], added: Date.now(), lastPlayed: 0 };
-  await DB.putFile(id, f);
+  await DB.putFile(id, typedFile(f));
   await DB.putMeta(meta);
   books.push(meta);
 }
