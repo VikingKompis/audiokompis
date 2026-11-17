@@ -156,6 +156,8 @@ const fmt = s => {
   return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(x).padStart(2, '0');
 };
 const hashOf = s => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+const artStyle = b => b.cover ? `background:#222 url(${b.cover}) center/cover no-repeat` : coverBg(b.title);
+const artText = b => b.cover ? '' : esc(b.title);
 const coverBg = t => { const h = hashOf(t) % 360; return `background:linear-gradient(150deg,hsl(${h} 70% 60%),hsl(${(h + 40) % 360} 65% 42%))`; };
 const dur = () => (isFinite(audio.duration) && audio.duration > 0) ? audio.duration : (current?.duration || 0);
 const pct = b => b.duration ? Math.min(100, b.position / b.duration * 100) : 0;
@@ -251,6 +253,73 @@ function tryChpl(dv, p, e, cb) {
   }
   return out;
 }
+/* ---------- embedded cover art (covr atom inside moov > udta > meta > ilst) ---------- */
+function findCovr(dv, s, e) {
+  let o = s;
+  while (o + 8 <= e) {
+    let size = dv.getUint32(o), hdr = 8;
+    if (size === 1) { size = Number(dv.getBigUint64(o + 8)); hdr = 16; }
+    if (size < hdr) break;
+    const end = Math.min(o + size, e), type = str4(dv, o + 4);
+    if (type === 'covr') {
+      let p = o + hdr;
+      while (p + 16 <= end) {
+        const ds = dv.getUint32(p);
+        if (ds < 16) break;
+        if (str4(dv, p + 4) === 'data') {
+          const flag = dv.getUint32(p + 8) & 0xffffff;
+          return { type: flag === 14 ? 'image/png' : 'image/jpeg', bytes: new Uint8Array(dv.buffer, dv.byteOffset + p + 16, Math.min(ds, end - p) - 16) };
+        }
+        p += ds;
+      }
+      return null;
+    }
+    if (type === 'moov' || type === 'udta' || type === 'ilst') { const r = findCovr(dv, o + hdr, end); if (r) return r; }
+    else if (type === 'meta') { const r = findCovr(dv, o + hdr + 4, end); if (r) return r; }
+    o += size;
+  }
+  return null;
+}
+async function squareJpeg(blob, px) {
+  const u = URL.createObjectURL(blob);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = u; });
+    const w = img.naturalWidth, h = img.naturalHeight, m = Math.min(w, h), out = Math.min(px, m);
+    const c = document.createElement('canvas'); c.width = c.height = out;
+    c.getContext('2d').drawImage(img, (w - m) / 2, (h - m) / 2, m, m, 0, 0, out, out);
+    return c.toDataURL('image/jpeg', 0.85);
+  } finally { URL.revokeObjectURL(u); }
+}
+async function readCover(file) {
+  try {
+    let off = 0;
+    while (off + 8 <= file.size) {
+      const h = new DataView(await file.slice(off, off + 16).arrayBuffer());
+      let size = h.getUint32(0), hdr = 8;
+      if (size === 1) { size = Number(h.getBigUint64(8)); hdr = 16; }
+      else if (size === 0) size = file.size - off;
+      if (size < 8) break;
+      if (str4(h, 4) === 'moov') {
+        const dv = new DataView(await file.slice(off, off + size).arrayBuffer());
+        const c = findCovr(dv, hdr, size);
+        return c && c.bytes.length > 100 ? await squareJpeg(new Blob([c.bytes], { type: c.type }), 600) : null;
+      }
+      off += size;
+    }
+  } catch (e) {}
+  return null;
+}
+async function backfillCovers() {
+  let changed = false;
+  for (const b of books) {
+    if (b.cover || b.coverChecked) continue;
+    try {
+      const f = await DB.getFile(b.id);
+      if (f) { b.cover = await readCover(f); b.coverChecked = true; await DB.putMeta(b); changed = true; }
+    } catch (e) {}
+  }
+  if (changed) { Object.keys(artCache).forEach(k => delete artCache[k]); renderLibrary(); if (current) { renderPlayer(); setSession(); } }
+}
 function probeDuration(f) {
   return new Promise(res => {
     const a = document.createElement('audio'), u = URL.createObjectURL(f);
@@ -273,8 +342,8 @@ function typedFile(f) {
 async function importFile(f) {
   const id = (crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(36).slice(2));
   const title = f.name.replace(/\.[^.]+$/, '').replace(/_/g, ' ').trim() || 'Untitled';
-  const [duration, chapters] = await Promise.all([probeDuration(f), readChapters(f)]);
-  const meta = { id, title, author: 'Erik Broberg', size: f.size, duration, chapters, position: 0, speed: 1, finished: false, bookmarks: [], added: Date.now(), lastPlayed: 0 };
+  const [duration, chapters, cover] = await Promise.all([probeDuration(f), readChapters(f), readCover(f)]);
+  const meta = { id, title, author: 'Erik Broberg', size: f.size, duration, chapters, position: 0, speed: 1, finished: false, bookmarks: [], added: Date.now(), lastPlayed: 0, cover, coverChecked: true };
   await DB.putFile(id, typedFile(f));
   await DB.putMeta(meta);
   books.push(meta);
@@ -291,14 +360,14 @@ function renderLibrary() {
   const cont = books.filter(b => !b.finished && b.lastPlayed).sort((a, b) => b.lastPlayed - a.lastPlayed)[0];
   $('#continue').innerHTML = cont ? `
     <button class="cont" data-open="${cont.id}">
-      <div class="art" style="${coverBg(cont.title)}">${esc(cont.title)}</div>
+      <div class="art" style="${artStyle(cont)}">${artText(cont)}</div>
       <div class="info"><div class="lbl">Continue</div><div class="ttl">${esc(cont.title)}</div>
       <div class="s" style="color:var(--mute);font-size:13px">${esc(authorOf(cont))}</div></div>
       <span class="go">Resume</span>
     </button>` : '';
   $('#grid').innerHTML = list.length ? list.map(b => `
     <div class="card" data-open="${b.id}">
-      <div class="art" style="${coverBg(b.title)}">${esc(b.title)}</div>
+      <div class="art" style="${artStyle(b)}">${artText(b)}</div>
       <div class="t">${esc(b.title)}</div>
       <div class="s">${esc(authorOf(b))}</div>
       <div class="bar"><i style="width:${b.finished ? 100 : pct(b)}%"></i></div>
@@ -309,6 +378,7 @@ function renderLibrary() {
 const authorOf = b => b.author || 'Erik Broberg';
 const artCache = {};
 function artFor(b) {
+  if (b.cover) return b.cover;
   if (artCache[b.id]) return artCache[b.id];
   const c = document.createElement('canvas'); c.width = c.height = 512;
   const x = c.getContext('2d'), h = hashOf(b.title) % 360;
@@ -399,8 +469,8 @@ function renderPlayer() {
   if (!current) return;
   $('#phTitle').textContent = current.title;
   $('#author').textContent = authorOf(current);
-  $('#cover').setAttribute('style', coverBg(current.title) + ';');
-  $('#coverText').textContent = current.title;
+  $('#cover').setAttribute('style', artStyle(current) + ';');
+  $('#coverText').textContent = current.cover ? '' : current.title;
   $('#speedBtn').textContent = rate() + '×';
   $('#sleepBtn').textContent = sleepLabel();
 }
@@ -476,7 +546,7 @@ function setSession() {
   try {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: i >= 0 ? current.chapters[i].title : current.title,
-      artist: authorOf(current), album: current.title, artwork: [{ src: artFor(current), sizes: '512x512', type: 'image/png' }]
+      artist: authorOf(current), album: current.title, artwork: [{ src: artFor(current), sizes: '512x512', type: current.cover ? 'image/jpeg' : 'image/png' }]
     });
   } catch (e) {}
 }
@@ -710,6 +780,7 @@ $('#file').addEventListener('change', async e => {
     toast('Storage unavailable here. Imports will not persist.', 4000);
   }
   renderLibrary();
+  backfillCovers();
 })();
 </script>
 </body>
