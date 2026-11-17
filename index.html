@@ -6,10 +6,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="AudioKompis">
-<meta name="theme-color" content="#f5efe4">
+<meta name="theme-color" content="#ffffff">
 <title>AudioKompis</title>
 <style>
-:root{--bg:#f5efe4;--panel:#ffffff;--line:#e6dfd2;--text:#1f2430;--mute:#6b7280;--accent:#ff6f4a}
+:root{--bg:#ffffff;--panel:#f0eee8;--line:#eceae3;--text:#111111;--mute:#6a6a66;--accent:#c85a00;--ink:#111111}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,system-ui,"Helvetica Neue",sans-serif;overflow:hidden}
 button,input,select{font:inherit;color:inherit}
@@ -17,9 +17,10 @@ button{background:none;border:0;cursor:pointer;touch-action:manipulation}
 .hidden{display:none!important}
 .screen{position:fixed;inset:0;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
 header{display:flex;align-items:center;gap:10px;padding:12px 16px 8px}
-header h1{font-size:28px;margin:0;flex:1;font-weight:700;letter-spacing:-.01em}
+header h1{font-size:28px;margin:0;flex:1;font-weight:800;letter-spacing:-.02em}
 .ph{flex:1;text-align:center;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.icon{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:20px;background:var(--panel)}
+.icon{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:20px;background:var(--panel);flex:none}
+.icon svg{display:block}
 .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px calc(40px + env(safe-area-inset-bottom))}
 .search{width:100%;padding:11px 14px;border-radius:12px;border:0;background:var(--panel);outline:none;font-size:16px}
 .tools{display:flex;gap:8px;margin-bottom:16px}
@@ -36,22 +37,35 @@ header h1{font-size:28px;margin:0;flex:1;font-weight:700;letter-spacing:-.01em}
 .cont .info{flex:1;min-width:0}
 .cont .lbl{font-size:12px;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
 .cont .ttl{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cont .go{background:var(--accent);color:#fff;border-radius:999px;padding:8px 14px;font-weight:700}
+.cont .go{background:var(--ink);color:#fff;border-radius:999px;padding:8px 14px;font-weight:700}
 .empty{color:var(--mute);text-align:center;margin-top:60px}
-.cover{color:#fff;text-shadow:0 1px 8px #0005;width:min(72vw,300px);aspect-ratio:1;margin:10px auto 18px;border-radius:20px;display:grid;place-items:center;padding:24px;text-align:center;font:600 26px/1.2 Georgia,serif;box-shadow:0 18px 40px #6b4a2a33}
-.author{text-align:center;color:var(--accent);font-weight:600;margin:-4px 0 2px}
-.chapter{text-align:center;color:var(--mute);min-height:1.4em;margin-bottom:14px;padding:0 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.scrubwrap{position:relative;padding:10px 0}
-#scrub{width:100%;margin:0;accent-color:var(--accent);height:28px}
-.ticks{position:absolute;left:0;right:0;top:50%;height:12px;margin-top:-6px;pointer-events:none}
-.ticks i{position:absolute;width:2px;height:100%;background:#0008}
-.times{display:flex;justify-content:space-between;color:var(--mute);font-variant-numeric:tabular-nums;font-size:13px;margin-bottom:18px}
-.transport{display:flex;justify-content:center;align-items:center;gap:22px;margin-bottom:26px}
-.skip{font-size:15px;font-weight:600;width:56px;height:56px;border-radius:50%;background:var(--panel);display:grid;place-items:center}
-.big{width:84px;height:84px;border-radius:50%;background:var(--accent);color:#fff;font-size:30px;display:grid;place-items:center;box-shadow:0 10px 26px #ff6f4a55}
-.tools2{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.tools2 button{background:var(--panel);border-radius:12px;padding:12px 6px;font-size:14px}
-.tools2 .on{color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.phead{display:flex;align-items:center;gap:12px;padding:8px 16px 4px}
+.phead .cover{width:56px;height:56px;border-radius:10px;flex:none;color:#fff;font:600 8px/1.1 Georgia,serif;display:grid;place-items:center;text-align:center;overflow:hidden}
+.phead .who{flex:1;min-width:0}
+.phead .ph{text-align:left;font-weight:800;font-size:17px;line-height:1.15}
+.author{color:var(--mute);font-size:13px}
+.pbody{flex:1;display:flex;flex-direction:column;padding:12px 20px calc(18px + env(safe-area-inset-bottom));min-height:0;overflow-y:auto}
+.chnum{margin-top:18px;font-size:15px;font-weight:700;color:var(--accent);min-height:1.3em}
+.chapter{font-size:clamp(30px,10.5vw,40px);font-weight:800;line-height:1.05;letter-spacing:-.02em;margin:2px 0 0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.scrubwrap{position:relative;padding:18px 0 4px;--p:0%}
+#scrub{-webkit-appearance:none;appearance:none;width:100%;margin:0;height:32px;background:none;display:block}
+#scrub::-webkit-slider-runnable-track{height:12px;border-radius:6px;background:linear-gradient(90deg,var(--ink) var(--p),#eceae3 var(--p))}
+#scrub::-moz-range-track{height:12px;border-radius:6px;background:linear-gradient(90deg,var(--ink) var(--p),#eceae3 var(--p))}
+#scrub::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:28px;height:28px;margin-top:-8px;border-radius:50%;background:#fff;border:4px solid var(--ink);box-shadow:0 2px 6px #0003}
+#scrub::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#fff;border:4px solid var(--ink)}
+.ticks{display:none}
+.times{display:flex;justify-content:space-between;font-weight:600;font-size:16px;font-variant-numeric:tabular-nums}
+.times span:last-child{color:var(--mute)}
+.transport{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:center;justify-items:center;margin:22px 0 18px}
+.skip{width:min(26vw,100px);height:min(26vw,100px);border-radius:50%;background:var(--panel);color:var(--ink);display:grid;place-items:center}
+.skip svg{width:46%;height:46%}
+.big{width:min(33vw,132px);height:min(33vw,132px);border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center}
+.big svg{width:50%;height:50%}
+.chbtns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.chbtns button{height:56px;border-radius:16px;background:var(--panel);color:var(--ink);display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:700}
+.tools2{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:auto;padding-top:18px}
+.tools2 button{height:72px;border-radius:18px;background:var(--ink);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-size:12px;font-weight:600}
+.tools2 .on{background:var(--accent)}
 .sheetwrap{position:fixed;inset:0;background:#0009;display:flex;align-items:flex-end;z-index:10}
 .sheet{width:100%;max-height:72vh;background:#ffffff;border-radius:20px 20px 0 0;padding:8px 16px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column}
 .grab{width:40px;height:5px;border-radius:3px;background:#d6cdbd;margin:0 auto 10px}
@@ -87,33 +101,34 @@ header h1{font-size:28px;margin:0;flex:1;font-weight:700;letter-spacing:-.01em}
 </main>
 
 <main id="player" class="screen hidden">
-  <header>
-    <button class="icon" data-act="closeplayer" aria-label="Library">‹</button>
-    <div class="ph" id="phTitle"></div>
-    <button class="icon" data-act="menu" aria-label="Book options">⋯</button>
-  </header>
-  <div class="scroll">
+  <div class="phead">
+    <button class="icon" data-act="closeplayer" aria-label="Back to library"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
     <div class="cover" id="cover"><span id="coverText"></span></div>
-    <div class="author" id="author"></div>
+    <div class="who"><div class="ph" id="phTitle"></div><div class="author" id="author"></div></div>
+    <button class="icon" data-act="menu" aria-label="Book options"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg></button>
+  </div>
+  <div class="pbody">
+    <div class="chnum" id="chNum"></div>
     <div class="chapter" id="chapterName"></div>
-    <div class="scrubwrap">
+    <div class="scrubwrap" id="scrubwrap">
       <div class="ticks" id="ticks"></div>
-      <input type="range" id="scrub" min="0" max="5000" value="0" step="1" aria-label="Position">
+      <input type="range" id="scrub" min="0" max="5000" value="0" step="1" aria-label="Position in chapter">
     </div>
     <div class="times"><span id="tEl">0:00</span><span id="tRem">−0:00</span></div>
     <div class="transport">
-      <button class="skip" data-act="seek" data-n="-30">−30</button>
-      <button class="skip" data-act="chap" data-n="-1" aria-label="Previous chapter">⏮</button>
-      <button class="big" id="play" data-act="play" aria-label="Play or pause">▶</button>
-      <button class="skip" data-act="chap" data-n="1" aria-label="Next chapter">⏭</button>
-      <button class="skip" data-act="seek" data-n="30">+30</button>
+      <button class="skip" data-act="seek" data-n="-30" aria-label="Back 30 seconds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4.5v4h4"/><text x="12" y="15.2" font-size="7.5" font-weight="700" text-anchor="middle" fill="currentColor" stroke="none" font-family="system-ui">30</text></svg></button>
+      <button class="big" id="play" data-act="play" aria-label="Play or pause"></button>
+      <button class="skip" data-act="seek" data-n="30" aria-label="Forward 30 seconds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4.5v4h-4"/><text x="12" y="15.2" font-size="7.5" font-weight="700" text-anchor="middle" fill="currentColor" stroke="none" font-family="system-ui">30</text></svg></button>
+    </div>
+    <div class="chbtns">
+      <button data-act="chap" data-n="-1" aria-label="Previous chapter"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 5v14"/><path d="M19 5.5v13L9 12z" fill="currentColor" stroke="none"/></svg><span>Chapter</span></button>
+      <button data-act="chap" data-n="1" aria-label="Next chapter"><span>Chapter</span><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M18 5v14"/><path d="M5 5.5v13L15 12z" fill="currentColor" stroke="none"/></svg></button>
     </div>
     <div class="tools2">
-      <button id="speedBtn" data-act="speedsheet">1×</button>
-      <button id="sleepBtn" data-act="sleepsheet">Sleep</button>
-      <button data-act="chapters">Chapters</button>
-      <button data-act="bookmarks">Bookmarks</button>
-      <button data-act="bm-add">Add bookmark</button>
+      <button data-act="speedsheet" aria-label="Speed"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 16a8 8 0 1 1 16 0"/><path d="M12 16l4-5"/></svg><span id="speedBtn">1×</span></button>
+      <button id="sleepWrap" data-act="sleepsheet" aria-label="Sleep timer"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg><span id="sleepBtn">Sleep</span></button>
+      <button data-act="chapters" aria-label="Chapters"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg><span>Chapters</span></button>
+      <button data-act="bookmarks" aria-label="Bookmarks"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h10v16l-5-3.5L7 20z"/></svg><span>Bookmarks</span></button>
     </div>
   </div>
 </main>
@@ -155,6 +170,8 @@ const fmt = s => {
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
   return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(x).padStart(2, '0');
 };
+const PLAY_SVG='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" transform="translate(1 0)"/></svg>', PAUSE_SVG='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
+let shownPaused = null;
 const hashOf = s => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
 const artStyle = b => b.cover ? `background:#222 url(${b.cover}) center/cover no-repeat` : coverBg(b.title);
 const artText = b => b.cover ? '' : esc(b.title);
@@ -473,7 +490,8 @@ function renderPlayer() {
   if (!current) return;
   $('#phTitle').textContent = current.title;
   $('#author').textContent = authorOf(current);
-  $('#cover').setAttribute('style', artStyle(current) + ';');
+  $('#cover').setAttribute('style', artStyle(current));
+  shownPaused = null;
   $('#coverText').textContent = current.cover ? '' : current.title;
   $('#speedBtn').textContent = rate() + '×';
   $('#sleepBtn').textContent = sleepLabel();
@@ -494,11 +512,15 @@ function updateUI() {
   const d = dur(), t = audio.currentTime;
   const B = chapterBounds(t), len = Math.max(0.001, B.e - B.s);
   if (!scrubbing) $('#scrub').value = d ? Math.round(Math.min(1, Math.max(0, (t - B.s) / len)) * 5000) : 0;
+  $('#scrubwrap').style.setProperty('--p', (scrubbing ? $('#scrub').value / 50 : Math.min(100, Math.max(0, (t - B.s) / len * 100))) + '%');
   $('#tEl').textContent = fmt(Math.max(0, t - B.s));
   $('#tRem').textContent = '−' + fmt(Math.max(0, B.e - t));
   const i = chapterIndex(t);
-  $('#chapterName').textContent = i >= 0 ? current.chapters[i].title : '';
-  $('#play').textContent = audio.paused ? '▶' : '❚❚';
+  const cn = i >= 0 ? current.chapters[i].title : current.title, m = cn.match(/^(.*?):\s*(.+)$/);
+  $('#chNum').textContent = m ? m[1] : (i >= 0 && current.chapters.length > 1 ? `${i + 1} of ${current.chapters.length}` : '');
+  $('#chapterName').textContent = m ? m[2] : cn;
+  if (shownPaused !== audio.paused) { shownPaused = audio.paused; $('#play').innerHTML = audio.paused ? PLAY_SVG : PAUSE_SVG; }
+  $('#sleepWrap').classList.toggle('on', !!sleep);
   $('#sleepBtn').textContent = sleepLabel();
 }
 function chapterIndex(t) {
@@ -597,6 +619,7 @@ let scrubB = null;
 scrub.addEventListener('input', () => {
   if (!scrubbing) scrubB = chapterBounds(audio.currentTime);
   scrubbing = true;
+  $('#scrubwrap').style.setProperty('--p', scrub.value / 50 + '%');
   const t = scrubB.s + scrub.value / 5000 * (scrubB.e - scrubB.s);
   $('#tEl').textContent = fmt(t - scrubB.s); $('#tRem').textContent = '−' + fmt(scrubB.e - t);
 });
