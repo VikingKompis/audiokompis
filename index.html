@@ -98,7 +98,7 @@ header h1{font-size:28px;margin:0;flex:1;font-weight:700;letter-spacing:-.01em}
     <div class="chapter" id="chapterName"></div>
     <div class="scrubwrap">
       <div class="ticks" id="ticks"></div>
-      <input type="range" id="scrub" min="0" max="1000" value="0" step="1" aria-label="Position">
+      <input type="range" id="scrub" min="0" max="5000" value="0" step="1" aria-label="Position">
     </div>
     <div class="times"><span id="tEl">0:00</span><span id="tRem">−0:00</span></div>
     <div class="transport">
@@ -474,17 +474,24 @@ function renderPlayer() {
   $('#speedBtn').textContent = rate() + '×';
   $('#sleepBtn').textContent = sleepLabel();
 }
+// The scrubber covers the current chapter only (the whole book if it has no chapters).
+function chapterBounds(t) {
+  const c = current ? current.chapters : [], D = dur();
+  if (!c.length) return { s: 0, e: D };
+  const i = chapterIndex(t);
+  return { s: c[i].start, e: i + 1 < c.length ? c[i + 1].start : D };
+}
 function renderTicks() {
   const d = dur();
-  $('#ticks').innerHTML = (d && current && current.chapters.length > 1)
-    ? current.chapters.slice(1).map(c => `<i style="left:${c.start / d * 100}%"></i>`).join('') : '';
+  $('#ticks').innerHTML = '';
 }
 function updateUI() {
   if (!current) return;
   const d = dur(), t = audio.currentTime;
-  if (!scrubbing) $('#scrub').value = d ? Math.round(t / d * 1000) : 0;
-  $('#tEl').textContent = fmt(t);
-  $('#tRem').textContent = '−' + fmt(Math.max(0, d - t));
+  const B = chapterBounds(t), len = Math.max(0.001, B.e - B.s);
+  if (!scrubbing) $('#scrub').value = d ? Math.round(Math.min(1, Math.max(0, (t - B.s) / len)) * 5000) : 0;
+  $('#tEl').textContent = fmt(Math.max(0, t - B.s));
+  $('#tRem').textContent = '−' + fmt(Math.max(0, B.e - t));
   const i = chapterIndex(t);
   $('#chapterName').textContent = i >= 0 ? current.chapters[i].title : '';
   $('#play').textContent = audio.paused ? '▶' : '❚❚';
@@ -582,8 +589,14 @@ audio.addEventListener('pause', () => { updateUI(); if ('mediaSession' in naviga
 audio.addEventListener('ended', () => { if (current) { current.finished = true; saveProgress(true); toast('Finished'); } updateUI(); });
 
 const scrub = $('#scrub');
-scrub.addEventListener('input', () => { scrubbing = true; $('#tEl').textContent = fmt(scrub.value / 1000 * dur()); });
-scrub.addEventListener('change', () => { if (current) audio.currentTime = scrub.value / 1000 * dur(); scrubbing = false; });
+let scrubB = null;
+scrub.addEventListener('input', () => {
+  if (!scrubbing) scrubB = chapterBounds(audio.currentTime);
+  scrubbing = true;
+  const t = scrubB.s + scrub.value / 5000 * (scrubB.e - scrubB.s);
+  $('#tEl').textContent = fmt(t - scrubB.s); $('#tRem').textContent = '−' + fmt(scrubB.e - t);
+});
+scrub.addEventListener('change', () => { if (current && scrubB) audio.currentTime = Math.min(scrubB.e - 0.1, scrubB.s + scrub.value / 5000 * (scrubB.e - scrubB.s)); scrubbing = false; });
 
 /* ---------- enhance: light EQ + gentle compression via Web Audio (no CPU load to speak of) ---------- */
 let ctx = null, G = null;
