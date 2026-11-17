@@ -456,14 +456,18 @@ async function openBook(id) {
   setSession();
 }
 function closePlayer() {
-  if (current) { saveProgress(true); audio.pause(); }
-  if (currentURL) { URL.revokeObjectURL(currentURL); currentURL = null; }
-  audio.removeAttribute('src'); audio.load();
-  current = null;
-  closeSheet();
+  // Switch screens first so Back always responds, then tidy up; one failing step can't block the others.
   $('#player').classList.add('hidden');
   $('#library').classList.remove('hidden');
-  renderLibrary();
+  const b = current;
+  current = null;
+  const step = f => { try { f(); } catch (e) {} };
+  step(() => { if (b) { current = b; saveProgress(true); current = null; } });
+  step(() => audio.pause());
+  step(() => { if (currentURL) URL.revokeObjectURL(currentURL); currentURL = null; });
+  step(() => { audio.removeAttribute('src'); audio.load(); });
+  step(closeSheet);
+  step(renderLibrary);
 }
 function renderPlayer() {
   if (!current) return;
